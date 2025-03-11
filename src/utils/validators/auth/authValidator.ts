@@ -1,5 +1,5 @@
 import { body } from "express-validator";
-import prisma from "../../../configs/database";
+import prisma from "@/configs/database";
 
 // validasi untuk Register
 export const validateRegister = [

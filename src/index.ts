@@ -6,6 +6,7 @@ import dotenv from 'dotenv';
 import morgan from 'morgan';
 import logger from './services/logger'
 import limiter from './middlewares/security/rateLimiters';
+import router from './routes';
 
 dotenv.config();
 
@@ -30,6 +31,9 @@ app.use((req, res, next) => {
 
 //rate limiting
 app.use(limiter);
+
+//gunakan semua routes dengan prefix "/api"
+app.use("/api", router);
 
 //routes
 app.get('/', async (req: Request, res: Response, next) => {

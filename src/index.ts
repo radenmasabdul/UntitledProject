@@ -5,7 +5,7 @@ import compression from 'compression'
 import dotenv from 'dotenv';
 import morgan from 'morgan';
 import logger from './services/logger'
-import limiter from './middlewares/rateLimiters';
+import limiter from './middlewares/security/rateLimiters';
 
 dotenv.config();
 
@@ -50,3 +50,5 @@ app.use((err: Error, req: Request, res: Response, next: Function) => {
 app.listen(port, () => {
     console.log(`Server started on port ${port}`);
 });
+
+export default app;

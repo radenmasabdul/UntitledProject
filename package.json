@@ -4,7 +4,7 @@
   "description": "social",
   "main": "dist/index.js",
   "scripts": {
-    "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
+    "dev": "ts-node-dev --require tsconfig-paths/register --respawn --transpile-only src/index.ts",
     "build": "tsc",
     "start": "ts-node src/index.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
@@ -28,6 +28,7 @@
     "node-cache": "^5.1.2",
     "nodemailer": "^6.10.0",
     "socket.io": "^4.8.1",
+    "tsconfig-paths": "^4.2.0",
     "uuid": "^11.1.0",
     "winston": "^3.17.0",
     "zod": "^3.24.2"

@@ -13,12 +13,13 @@ declare global {
 }
 
 // middleware untuk memverifikasi token JWT
-export function verifyToken(req: Request, res: Response, next: NextFunction) {
+export function verifyToken(req: Request, res: Response, next: NextFunction): void {
     // ambil token dari header Authorization (format: Bearer <token>)
     const token = req.headers.authorization?.split(" ")[1];
 
     if (!token) {
-        return res.status(401).json({ message: "Unauthenticated." });
+        res.status(401).json({ message: "Unauthenticated." });
+        return;
     }
 
     try {
@@ -26,6 +27,7 @@ export function verifyToken(req: Request, res: Response, next: NextFunction) {
         req.user = decoded; // simpan user yang terverifikasi di request
         next();
     } catch (error) {
-        return res.status(401).json({ message: "Invalid token." });
+        res.status(401).json({ message: "Invalid token." });
+        return;
     }
 }

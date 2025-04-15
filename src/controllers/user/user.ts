@@ -138,3 +138,71 @@ export const deleteUser = async (req: Request, res: Response) => {
         });
     }
 }
+
+export const updateProfileImage = async (req: Request, res: Response) => {
+    const { id } = req.params;
+    const file = req.file as Express.Multer.File;
+
+    if (!req.file) {
+        res.status(400).json({
+            success: false,
+            message: "No image file uploaded",
+        });
+        return;
+    }
+
+    try {
+        const updatedUser = await prisma.users.update({
+            where: { id },
+            data: {
+                profile_image: `${file.filename}`,
+            }
+        });
+
+        res.status(200).json({
+            success: true,
+            message: "Profile image updated successfully",
+            data: updatedUser,
+        });
+    } catch (error) {
+        console.error("Update Profile Image Error:", error);
+        res.status(500).json({
+            success: false,
+            message: "Internal server error",
+        });
+    }
+}
+
+export const updateBanner = async (req: Request, res: Response) => {
+    const { id } = req.params;
+    const file = req.file as Express.Multer.File;
+
+    if(!req.file) {
+        res.status(400).json({
+            success: false,
+            message: "No Banner image uploaded",
+        });
+        return;
+    }
+
+    try {
+        const updatedUser = await prisma.users.update({
+            where: { id },
+            data: {
+                banner: `${file.filename}`,
+            }
+        });
+
+        res.status(200).json({
+            success: true,
+            message: "Banner updated successfully",
+            data: updatedUser,
+        });
+    } catch (error) {
+        console.error("UpdateBanner Error:", error);
+        res.status(500).json({
+            success: false,
+            message: "Internal server error",
+        });
+    }
+}

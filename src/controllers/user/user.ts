@@ -216,6 +216,7 @@ export const followUser = async (req: Request, res: Response) => {
             success: false,
             message: "Unauthorized",
         });
+        return;
     }
 
     if (followerId === followingId) {
@@ -236,6 +237,7 @@ export const followUser = async (req: Request, res: Response) => {
                 success: false,
                 message: `User with ID ${followingId} not found.`,
             });
+            return;
         }
 
         const alreadyFollowing = await prisma.followers.findFirst({
@@ -250,6 +252,7 @@ export const followUser = async (req: Request, res: Response) => {
                 success: false,
                 message: "You are already following this user.",
             });
+            return;
         }
 
         const follow = await prisma.followers.create({
@@ -283,6 +286,7 @@ export const unfollowUser = async (req: Request, res: Response) => {
             success: false,
             message: "Unauthorized",
         });
+        return;
     }
 
     if (followerId === followingId) {

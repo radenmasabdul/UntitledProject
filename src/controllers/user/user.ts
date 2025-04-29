@@ -331,3 +331,79 @@ export const unfollowUser = async (req: Request, res: Response) => {
         });
     }
 }
+
+export const getUserFollowers = async (req: Request, res: Response) => {
+    const { id: userId } = req.params;
+
+    try {
+        const followers = await prisma.followers.findMany({
+            where: { followingId: userId },
+            include: {
+                follower: {
+                    select: {
+                        id: true,
+                        username: true,
+                        fullname: true,
+                        email: true,
+                        profile_image: true,
+                        banner: true,
+                        bio: true,
+                    }
+                }
+            }
+        });
+
+        const formatted = followers.map((f) => f.follower);
+
+        res.status(200).json({
+            success: true,
+            message: `Followers of user ${userId}`,
+            data: formatted,
+        })
+        return;
+    } catch (error) {
+        console.error("Get Followers Error:", error);
+        res.status(500).json({
+            success: false,
+            message: "Internal server error",
+        });
+    }
+}
+
+export const getUserFollowing = async (req: Request, res: Response) => {
+    const { id: userId } = req.params
+
+    try {
+        const followings = await prisma.followers.findMany({
+            where: { followerId: userId },
+            include: {
+                following: {
+                    select: {
+                        id: true,
+                        username: true,
+                        fullname: true,
+                        email: true,
+                        profile_image: true,
+                        banner: true,
+                        bio: true,
+                    }
+                }
+            }
+        });
+        
+        const formatted = followings.map((f) => f.following);
+
+        res.status(200).json({
+            success: true,
+            message: `Users followed by user ${userId}`,
+            data: formatted,
+        })
+        return;
+    } catch (error) {
+        console.error("Get Following Error:", error);
+        res.status(500).json({
+            success: false,
+            message: "Internal server error",
+        });
+    }
+}

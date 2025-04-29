@@ -206,3 +206,124 @@ export const updateBanner = async (req: Request, res: Response) => {
         });
     }
 }
+
+export const followUser = async (req: Request, res: Response) => {
+    const { id: followingId } = req.params;
+    const followerId = req.user?.id;
+
+    if (!followerId) {
+        res.status(401).json({
+            success: false,
+            message: "Unauthorized",
+        });
+    }
+
+    if (followerId === followingId) {
+        res.status(400).json({
+            success: false,
+            message: "You cannot follow yourself.",
+        });
+        return;
+    }
+
+    try {
+        const targetUser = await prisma.users.findUnique({
+            where: { id: followingId },
+        });
+
+        if (!targetUser) {
+            res.status(404).json({
+                success: false,
+                message: `User with ID ${followingId} not found.`,
+            });
+        }
+
+        const alreadyFollowing = await prisma.followers.findFirst({
+            where: {
+                followerId,
+                followingId,
+            },
+        });
+
+        if (alreadyFollowing) {
+            res.status(400).json({
+                success: false,
+                message: "You are already following this user.",
+            });
+        }
+
+        const follow = await prisma.followers.create({
+            data: {
+                followerId,
+                followingId,
+            },
+        });
+
+        res.status(201).json({
+            success: true,
+            message: `You are now following user with ID ${followingId}`,
+            data: follow,
+        });
+
+    } catch (error) {
+        console.error("Follow User Error:", error);
+        res.status(500).json({
+            success: false,
+            message: "Internal server error",
+        });
+    }
+};
+
+export const unfollowUser = async (req: Request, res: Response) => {
+    const { id: followingId } = req.params;
+    const followerId = req.user?.id;
+
+    if (!followerId) {
+        res.status(401).json({
+            success: false,
+            message: "Unauthorized",
+        });
+    }
+
+    if (followerId === followingId) {
+        res.status(400).json({
+            success: false,
+            message: "You cannot unfollow yourself.",
+        });
+        return;
+    }
+
+    try {
+        const existingFollow = await prisma.followers.findFirst({
+            where: {
+                followerId,
+                followingId,
+            },
+        });
+
+        if (!existingFollow) {
+            res.status(400).json({
+                success: false,
+                message: "You are not following this user.",
+            });
+            return;
+        }
+
+        await prisma.followers.delete({
+            where: {
+                id: existingFollow.id,
+            },
+        });
+
+        res.status(200).json({
+            success: true,
+            message: `You have unfollowed user with ID ${followingId}`,
+        });
+    } catch (error) {
+        console.error("Unfollow User Error:", error);
+        res.status(500).json({
+            success: false,
+            message: "Internal server error",
+        });
+    }
+}

@@ -407,3 +407,58 @@ export const getUserFollowing = async (req: Request, res: Response) => {
         });
     }
 }
+
+export const searchUsers = async (req: Request, res: Response) => {
+    const { search } = req.query;
+    const searchQuery = search as string;
+
+    if (!searchQuery || searchQuery.trim().length < 3) {
+        res.status(400).json({
+            success: false,
+            message: "Search query is required and must be at least 3 characters.",
+        });
+        return;
+    }
+
+    try {
+        const users = await prisma.users.findMany({
+            where:{
+                OR: [
+                    { username: { contains: search as string, mode: "insensitive" } },
+                    { fullname: { contains: search as string, mode: "insensitive" } },
+                ],
+            },
+            select:{
+                id: true,
+                username: true,
+                fullname: true,
+                email: true,
+                profile_image: true,
+                banner: true,
+                bio: true
+            }
+        });
+
+        if (users.length === 0) {
+            res.status(404).json({
+                success: false,
+                message: "No users found.",
+            });
+            return;
+        }
+
+        res.status(200).json({
+            success: true,
+            message: `Search results for search: ${search}`,
+            data: users,
+        });
+        return;
+
+    } catch (error) {
+        console.error("Search Users Error:", error);
+        res.status(500).json({
+            success: false,
+            message: "Internal server error",
+        });
+    }
+}

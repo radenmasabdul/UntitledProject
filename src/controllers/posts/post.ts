@@ -44,65 +44,6 @@ export const getAllPosts = async (req: Request, res: Response) => {
     }
 }
 
-export const getPostByid = async (req: Request, res: Response) => {
-    const id = parseInt(req.params.id);
-
-    if (isNaN(id)) {
-        res.status(400).json({
-            success: false,
-            message: "Invalid post ID",
-        });
-        return;
-    }
-
-    try {
-        const post = await prisma.posts.findUnique({
-            where: { id },
-            include: {
-                users: {
-                    select: {
-                        id: true,
-                        username: true,
-                        fullname: true,
-                        email: true,
-                        profile_image: true,
-                        banner: true,
-                        bio: true,
-                    }
-                },
-                _count: {
-                    select: {
-                        comments: true,
-                        likes: true,
-                    },
-                },
-            },
-        });
-
-        if (!post) {
-            res.status(404).json({
-                success: false,
-                message: "Post not found",
-            });
-            return;
-        }
-
-        res.status(200).json({
-            success: true,
-            message: "Post retrieved successfully",
-            data: post,
-        });
-        return;
-
-    } catch (error) {
-        console.error("Get Post Error:", error);
-        res.status(500).json({
-            success: false,
-            message: "Internal server error",
-        });
-    }
-}
-
 export const createPost = async (req: Request, res: Response) => {
     const { contentText } = req.body;
     const userId = req.user?.id;

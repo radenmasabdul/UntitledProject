@@ -112,10 +112,11 @@ export const deleteUser = async (req: Request, res: Response) => {
     const loggedInUserId = req.user.id;
 
     if (id !== loggedInUserId) {
-        return res.status(403).json({
+        res.status(403).json({
             success: false,
             message: "You are not authorized to delete this user",
         });
+        return;
     }
 
     try {

@@ -75,6 +75,15 @@ export const findUserById = async (req: Request, res: Response) => {
 
 export const updateUser = async (req: Request, res: Response) => {
     const { id } = req.params;
+    const loggedInUserId = req.user?.id;
+
+    if (id !== loggedInUserId) {
+        res.status(403).json({
+            success: false,
+            message: "You are not authorized to update this user",
+        });
+        return;
+    }
 
     try {
         const existingUser = await prisma.users.findUnique({
@@ -150,7 +159,16 @@ export const deleteUser = async (req: Request, res: Response) => {
 
 export const updateProfileImage = async (req: Request, res: Response) => {
     const { id } = req.params;
+    const loggedInUserId = req.user?.id;
     const file = req.file as Express.Multer.File;
+
+    if (id !== loggedInUserId) {
+        res.status(403).json({
+            success: false,
+            message: "You are not authorized to update this user's profile image",
+        });
+        return;
+    }
 
     if (!req.file) {
         res.status(400).json({
@@ -184,7 +202,16 @@ export const updateProfileImage = async (req: Request, res: Response) => {
 
 export const updateBanner = async (req: Request, res: Response) => {
     const { id } = req.params;
+    const loggedInUserId = req.user?.id;
     const file = req.file as Express.Multer.File;
+
+    if (id !== loggedInUserId) {
+        res.status(403).json({
+            success: false,
+            message: "You are not authorized to update this user's profile image",
+        });
+        return;
+    }
 
     if(!req.file) {
         res.status(400).json({

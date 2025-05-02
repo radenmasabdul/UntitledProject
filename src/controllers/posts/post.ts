@@ -209,3 +209,51 @@ export const deletePost = async (req: Request, res: Response) => {
       });
   }
 };
+
+export const updatePost = async (req: Request, res: Response) => {
+    const { id } = req.params;
+    const { contentText } = req.body;
+    const loggedInUserId = req.user?.id;
+
+    try {
+        const existingPost = await prisma.posts.findUnique({
+            where: { id },
+        });
+
+        if (!existingPost) {
+            res.status(404).json({
+                success: false,
+                message: `Post with ID ${id} not found`,
+            });
+            return;
+        }
+
+        if (existingPost.usersId !== loggedInUserId) {
+            res.status(403).json({
+                success: false,
+                message: "You are not authorized to edit this post",
+            });
+            return;
+        }
+
+        const updatedPost = await prisma.posts.update({
+            where: { id },
+            data: {
+                contentText: contentText || existingPost.contentText,
+            },
+        });
+
+        res.status(200).json({
+            success: true,
+            message: "Post updated successfully",
+            data: updatedPost,
+        });
+
+    } catch (error) {
+        console.error("Update Post Error:", error);
+        res.status(500).json({
+            success: false,
+            message: "Internal server error",
+        });
+    }
+};

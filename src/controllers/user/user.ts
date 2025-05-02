@@ -109,6 +109,14 @@ export const updateUser = async (req: Request, res: Response) => {
 
 export const deleteUser = async (req: Request, res: Response) => {
     const { id } = req.params;
+    const loggedInUserId = req.user.id;
+
+    if (id !== loggedInUserId) {
+        return res.status(403).json({
+            success: false,
+            message: "You are not authorized to delete this user",
+        });
+    }
 
     try {
         const existingUser = await prisma.users.findUnique({

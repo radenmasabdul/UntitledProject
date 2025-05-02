@@ -117,36 +117,82 @@ export const updateUser = async (req: Request, res: Response) => {
 }
 
 export const deleteUser = async (req: Request, res: Response) => {
-    const { id } = req.params;
     const loggedInUserId = req.user.id;
-
-    if (id !== loggedInUserId) {
-        res.status(403).json({
-            success: false,
-            message: "You are not authorized to delete this user",
-        });
-        return;
-    }
 
     try {
         const existingUser = await prisma.users.findUnique({
-            where: { id: id },
+            where: { id: loggedInUserId },
         });
 
-        if(!existingUser) {
+        if (!existingUser) {
             res.status(400).json({
                 success: false,
-                message: `User with ID ${id} not found`,
+                message: `User with ID ${loggedInUserId} not found`,
             });
+            return;
         }
 
+        await prisma.comment.deleteMany({
+            where: {
+                usersId: loggedInUserId,
+            },
+        });
+
+        await prisma.posts.deleteMany({
+            where: {
+                usersId: loggedInUserId,
+            },
+        });
+
+        await prisma.like.deleteMany({
+            where: {
+                usersId: loggedInUserId,
+            },
+        });
+
+        await prisma.rePosts.deleteMany({
+            where: {
+                usersId: loggedInUserId,
+            },
+        });
+
+        await prisma.notification.deleteMany({
+            where: {
+                usersId: loggedInUserId,
+            },
+        });
+
+        await prisma.followers.deleteMany({
+            where: {
+                followerId: loggedInUserId,
+            },
+        });
+
+        await prisma.followers.deleteMany({
+            where: {
+                followingId: loggedInUserId,
+            },
+        });
+
+        await prisma.friends.deleteMany({
+            where: {
+                usersId: loggedInUserId,
+            },
+        });
+
+        await prisma.friends.deleteMany({
+            where: {
+                friendId: loggedInUserId,
+            },
+        });
+
         await prisma.users.delete({
-            where: { id: id },
+            where: { id: loggedInUserId },
         });
 
         res.status(200).json({
             success: true,
-            message: `User with ID ${id} deleted successfully`,
+            message: `User with ID ${loggedInUserId} and related data deleted successfully`,
         });
     } catch (error) {
         console.error("Delete User Error:", error);
@@ -155,7 +201,7 @@ export const deleteUser = async (req: Request, res: Response) => {
             message: "Internal server error",
         });
     }
-}
+};
 
 export const updateProfileImage = async (req: Request, res: Response) => {
     const { id } = req.params;

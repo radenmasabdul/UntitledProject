@@ -1,546 +1,297 @@
 import { Request, Response } from "express";
 import prisma from "@/configs/database";
+import { userSelectFields } from "@/utils/helpers/prismaSelect";
+import { successResponse, errorResponse } from "@/utils/helpers/response";
+import { isValidId } from "@/middlewares/validate/validateObjectId";
 
-export const findUsers = async (req: Request, res: Response) => {
-    try {
-        const users  = await prisma.users.findMany({
-            select: {
-                id: true,
-                username: true,
-                fullname: true,
-                email: true,
-                profile_image: true,
-                banner: true,
-                bio: true,
-            },
-            orderBy: {
-                createdAt: "desc",
-            },
-        });
-
-        res.status(200).json({
-            success: true,
-            message: "Get all users successfully",
-            data: users,
-        });
-
-    } catch (error) {
-        console.error("Get User Error:", error);
-        res.status(500).json({
-            success: false,
-            message: "Internal server error",
-        });
-    }
-}
-
-export const findUserById = async (req: Request, res: Response) => {
-    const { id } = req.params;
-
-    try {
-        const user = await prisma.users.findUnique({
-            where: {
-                id: id,
-            },
-            select: {
-                id: true,
-                username: true,
-                fullname: true,
-                email: true,
-                profile_image: true,
-                banner: true,
-                bio: true,
-            }
-        });
-
-        if (!user) {
-            res.status(404).json({
-                success: false,
-                message: `User with ID ${id} not found`,
-            });
-            return;
-        }
-
-        res.status(200).json({
-            success: true,
-            message: `Get user By ID :${id} Successfully`,
-            data: user,
-        })
-    } catch (error) {
-        res.status(500).json({
-            success: false,
-            message: "Internal server error",
-        });
-    }
-}
-
-export const updateUser = async (req: Request, res: Response) => {
-    const { id } = req.params;
-    const loggedInUserId = req.user?.id;
-
-    if (id !== loggedInUserId) {
-        res.status(403).json({
-            success: false,
-            message: "You are not authorized to update this user",
-        });
-        return;
-    }
-
-    try {
-        const existingUser = await prisma.users.findUnique({
-            where: { id: id },
-        });
-
-        if(!existingUser) {
-            res.status(404).json({
-                success: false,
-                message: `User with ID ${id} not found`,
-            });
-        }
-
-        const updatedUser = await prisma.users.update({
-            where: { id: id },
-            data: req.body,
-        });
-
-        res.status(200).json({
-            success: true,
-            message: "User updated successfully",
-            data: updatedUser,
-        })
-    } catch (error) {
-        console.error("Update User Error:", error);
-        res.status(500).json({
-            success: false,
-            message: "Internal server error",
-        });
-    }
-}
-
-export const deleteUser = async (req: Request, res: Response) => {
-    const loggedInUserId = req.user.id;
-
-    try {
-        const existingUser = await prisma.users.findUnique({
-            where: { id: loggedInUserId },
-        });
-
-        if (!existingUser) {
-            res.status(400).json({
-                success: false,
-                message: `User with ID ${loggedInUserId} not found`,
-            });
-            return;
-        }
-
-        await prisma.comment.deleteMany({
-            where: {
-                usersId: loggedInUserId,
-            },
-        });
-
-        await prisma.posts.deleteMany({
-            where: {
-                usersId: loggedInUserId,
-            },
-        });
-
-        await prisma.like.deleteMany({
-            where: {
-                usersId: loggedInUserId,
-            },
-        });
-
-        await prisma.rePosts.deleteMany({
-            where: {
-                usersId: loggedInUserId,
-            },
-        });
-
-        await prisma.notification.deleteMany({
-            where: {
-                usersId: loggedInUserId,
-            },
-        });
-
-        await prisma.followers.deleteMany({
-            where: {
-                followerId: loggedInUserId,
-            },
-        });
-
-        await prisma.followers.deleteMany({
-            where: {
-                followingId: loggedInUserId,
-            },
-        });
-
-        await prisma.friends.deleteMany({
-            where: {
-                usersId: loggedInUserId,
-            },
-        });
-
-        await prisma.friends.deleteMany({
-            where: {
-                friendId: loggedInUserId,
-            },
-        });
-
-        await prisma.users.delete({
-            where: { id: loggedInUserId },
-        });
-
-        res.status(200).json({
-            success: true,
-            message: `User with ID ${loggedInUserId} and related data deleted successfully`,
-        });
-    } catch (error) {
-        console.error("Delete User Error:", error);
-        res.status(500).json({
-            success: false,
-            message: "Internal server error",
-        });
-    }
+export const findUsers = async (_req: Request, res: Response): Promise<void> => {
+  try {
+    const users = await prisma.users.findMany({
+      select: userSelectFields,
+      orderBy: { createdAt: "desc" },
+    });
+    successResponse(res, "Get all users successfully", users);
+  } catch (error) {
+    console.error("Get User Error:", error);
+    errorResponse(res, "Internal server error");
+  }
 };
 
-export const updateProfileImage = async (req: Request, res: Response) => {
-    const { id } = req.params;
-    const loggedInUserId = req.user?.id;
-    const file = req.file as Express.Multer.File;
+export const findUserById = async (req: Request, res: Response): Promise<void> => {
+  const { id } = req.params;
+  if (!isValidId(id)) {
+    errorResponse(res, "Invalid user ID", 400);
+    return;
+  }
 
-    if (id !== loggedInUserId) {
-        res.status(403).json({
-            success: false,
-            message: "You are not authorized to update this user's profile image",
-        });
-        return;
+  try {
+    const user = await prisma.users.findUnique({ where: { id }, select: userSelectFields });
+    if (!user) {
+      errorResponse(res, `User with ID ${id} not found`, 404);
+      return;
     }
-
-    if (!req.file) {
-        res.status(400).json({
-            success: false,
-            message: "No image file uploaded",
-        });
-        return;
-    }
-
-    try {
-        const updatedUser = await prisma.users.update({
-            where: { id },
-            data: {
-                profile_image: `${file.filename}`,
-            }
-        });
-
-        res.status(200).json({
-            success: true,
-            message: "Profile image updated successfully",
-            data: updatedUser,
-        });
-    } catch (error) {
-        console.error("Update Profile Image Error:", error);
-        res.status(500).json({
-            success: false,
-            message: "Internal server error",
-        });
-    }
-}
-
-export const updateBanner = async (req: Request, res: Response) => {
-    const { id } = req.params;
-    const loggedInUserId = req.user?.id;
-    const file = req.file as Express.Multer.File;
-
-    if (id !== loggedInUserId) {
-        res.status(403).json({
-            success: false,
-            message: "You are not authorized to update this user's profile image",
-        });
-        return;
-    }
-
-    if(!req.file) {
-        res.status(400).json({
-            success: false,
-            message: "No Banner image uploaded",
-        });
-        return;
-    }
-
-    try {
-        const updatedUser = await prisma.users.update({
-            where: { id },
-            data: {
-                banner: `${file.filename}`,
-            }
-        });
-
-        res.status(200).json({
-            success: true,
-            message: "Banner updated successfully",
-            data: updatedUser,
-        });
-    } catch (error) {
-        console.error("UpdateBanner Error:", error);
-        res.status(500).json({
-            success: false,
-            message: "Internal server error",
-        });
-    }
-}
-
-export const followUser = async (req: Request, res: Response) => {
-    const { id: followingId } = req.params;
-    const followerId = req.user?.id;
-
-    if (!followerId) {
-        res.status(401).json({
-            success: false,
-            message: "Unauthorized",
-        });
-        return;
-    }
-
-    if (followerId === followingId) {
-        res.status(400).json({
-            success: false,
-            message: "You cannot follow yourself.",
-        });
-        return;
-    }
-
-    try {
-        const targetUser = await prisma.users.findUnique({
-            where: { id: followingId },
-        });
-
-        if (!targetUser) {
-            res.status(404).json({
-                success: false,
-                message: `User with ID ${followingId} not found.`,
-            });
-            return;
-        }
-
-        const alreadyFollowing = await prisma.followers.findFirst({
-            where: {
-                followerId,
-                followingId,
-            },
-        });
-
-        if (alreadyFollowing) {
-            res.status(400).json({
-                success: false,
-                message: "You are already following this user.",
-            });
-            return;
-        }
-
-        const follow = await prisma.followers.create({
-            data: {
-                followerId,
-                followingId,
-            },
-        });
-
-        res.status(201).json({
-            success: true,
-            message: `You are now following user with ID ${followingId}`,
-            data: follow,
-        });
-
-    } catch (error) {
-        console.error("Follow User Error:", error);
-        res.status(500).json({
-            success: false,
-            message: "Internal server error",
-        });
-    }
+    successResponse(res, `User with ID ${id} fetched successfully`, user);
+  } catch (error) {
+    console.error("Find User Error:", error);
+    errorResponse(res, "Internal server error");
+  }
 };
 
-export const unfollowUser = async (req: Request, res: Response) => {
-    const { id: followingId } = req.params;
-    const followerId = req.user?.id;
+export const updateUser = async (req: Request, res: Response): Promise<void> => {
+  const { id } = req.params;
+  const loggedInUserId = req.user?.id;
 
-    if (!followerId) {
-        res.status(401).json({
-            success: false,
-            message: "Unauthorized",
-        });
-        return;
+  if (id !== loggedInUserId) {
+    errorResponse(res, "Unauthorized", 403);
+    return;
+  }
+  if (!isValidId(id)) {
+    errorResponse(res, "Invalid user ID", 400);
+    return;
+  }
+
+  try {
+    const existingUser = await prisma.users.findUnique({ where: { id } });
+    if (!existingUser) {
+      errorResponse(res, `User with ID ${id} not found`, 404);
+      return;
     }
 
-    if (followerId === followingId) {
-        res.status(400).json({
-            success: false,
-            message: "You cannot unfollow yourself.",
-        });
-        return;
+    const updatedUser = await prisma.users.update({ where: { id }, data: req.body });
+    successResponse(res, "User updated successfully", updatedUser);
+  } catch (error) {
+    console.error("Update User Error:", error);
+    errorResponse(res, "Internal server error");
+  }
+};
+
+export const deleteUser = async (req: Request, res: Response): Promise<void> => {
+  const loggedInUserId = req.user.id;
+
+  if (!isValidId(loggedInUserId)) {
+    errorResponse(res, "Invalid user ID", 400);
+    return;
+  }
+
+  try {
+    const existingUser = await prisma.users.findUnique({ where: { id: loggedInUserId } });
+    if (!existingUser) {
+      errorResponse(res, `User with ID ${loggedInUserId} not found`, 400);
+      return;
     }
 
-    try {
-        const existingFollow = await prisma.followers.findFirst({
-            where: {
-                followerId,
-                followingId,
-            },
-        });
+    const deleteDependencies = [
+      prisma.comment.deleteMany({ where: { usersId: loggedInUserId } }),
+      prisma.posts.deleteMany({ where: { usersId: loggedInUserId } }),
+      prisma.like.deleteMany({ where: { usersId: loggedInUserId } }),
+      prisma.rePosts.deleteMany({ where: { usersId: loggedInUserId } }),
+      prisma.notification.deleteMany({ where: { usersId: loggedInUserId } }),
+      prisma.followers.deleteMany({ where: { followerId: loggedInUserId } }),
+      prisma.followers.deleteMany({ where: { followingId: loggedInUserId } }),
+      prisma.friends.deleteMany({ where: { usersId: loggedInUserId } }),
+      prisma.friends.deleteMany({ where: { friendId: loggedInUserId } }),
+    ];
 
-        if (!existingFollow) {
-            res.status(400).json({
-                success: false,
-                message: "You are not following this user.",
-            });
-            return;
-        }
+    await Promise.all(deleteDependencies);
+    await prisma.users.delete({ where: { id: loggedInUserId } });
 
-        await prisma.followers.delete({
-            where: {
-                id: existingFollow.id,
-            },
-        });
+    successResponse(res, `User with ID ${loggedInUserId} and related data deleted successfully`);
+  } catch (error) {
+    console.error("Delete User Error:", error);
+    errorResponse(res, "Internal server error");
+  }
+};
 
-        res.status(200).json({
-            success: true,
-            message: `You have unfollowed user with ID ${followingId}`,
-        });
-    } catch (error) {
-        console.error("Unfollow User Error:", error);
-        res.status(500).json({
-            success: false,
-            message: "Internal server error",
-        });
-    }
-}
+export const updateProfileImage = async (req: Request, res: Response): Promise<void> => {
+  const { id } = req.params;
+  const loggedInUserId = req.user?.id;
+  const file = req.file;
 
-export const getUserFollowers = async (req: Request, res: Response) => {
-    const { id: userId } = req.params;
+  if (!file) {
+    errorResponse(res, "No image file uploaded", 400);
+    return;
+  }
+  if (id !== loggedInUserId) {
+    errorResponse(res, "Unauthorized", 403);
+    return;
+  }
 
-    try {
-        const followers = await prisma.followers.findMany({
-            where: { followingId: userId },
-            include: {
-                follower: {
-                    select: {
-                        id: true,
-                        username: true,
-                        fullname: true,
-                        email: true,
-                        profile_image: true,
-                        banner: true,
-                        bio: true,
-                    }
-                }
-            }
-        });
+  try {
+    const updatedUser = await prisma.users.update({
+      where: { id },
+      data: { profile_image: file.filename },
+    });
+    successResponse(res, "Profile image updated successfully", updatedUser);
+  } catch (error) {
+    console.error("Update Profile Image Error:", error);
+    errorResponse(res, "Internal server error");
+  }
+};
 
-        const formatted = followers.map((f) => f.follower);
+export const updateBanner = async (req: Request, res: Response): Promise<void> => {
+  const { id } = req.params;
+  const loggedInUserId = req.user?.id;
+  const file = req.file;
 
-        res.status(200).json({
-            success: true,
-            message: `Followers of user ${userId}`,
-            data: formatted,
-        })
-        return;
-    } catch (error) {
-        console.error("Get Followers Error:", error);
-        res.status(500).json({
-            success: false,
-            message: "Internal server error",
-        });
-    }
-}
+  if (!file) {
+    errorResponse(res, "No banner image uploaded", 400);
+    return;
+  }
+  if (id !== loggedInUserId) {
+    errorResponse(res, "Unauthorized", 403);
+    return;
+  }
 
-export const getUserFollowing = async (req: Request, res: Response) => {
-    const { id: userId } = req.params
+  try {
+    const updatedUser = await prisma.users.update({
+      where: { id },
+      data: { banner: file.filename },
+    });
+    successResponse(res, "Banner updated successfully", updatedUser);
+  } catch (error) {
+    console.error("Update Banner Error:", error);
+    errorResponse(res, "Internal server error");
+  }
+};
 
-    try {
-        const followings = await prisma.followers.findMany({
-            where: { followerId: userId },
-            include: {
-                following: {
-                    select: {
-                        id: true,
-                        username: true,
-                        fullname: true,
-                        email: true,
-                        profile_image: true,
-                        banner: true,
-                        bio: true,
-                    }
-                }
-            }
-        });
-        
-        const formatted = followings.map((f) => f.following);
+export const followUser = async (req: Request, res: Response): Promise<void> => {
+  const { id: followingId } = req.params;
+  const followerId = req.user?.id;
 
-        res.status(200).json({
-            success: true,
-            message: `Users followed by user ${userId}`,
-            data: formatted,
-        })
-        return;
-    } catch (error) {
-        console.error("Get Following Error:", error);
-        res.status(500).json({
-            success: false,
-            message: "Internal server error",
-        });
-    }
-}
+  if (!followerId || !isValidId(followingId)) {
+    errorResponse(res, "Unauthorized", 401);
+    return;
+  }
+  if (followerId === followingId) {
+    errorResponse(res, "You cannot follow yourself.", 400);
+    return;
+  }
 
-export const searchUsers = async (req: Request, res: Response) => {
-    const { search } = req.query;
-    const searchQuery = search as string;
-
-    if (!searchQuery || searchQuery.trim().length < 3) {
-        res.status(400).json({
-            success: false,
-            message: "Search query is required and must be at least 3 characters.",
-        });
-        return;
+  try {
+    const userExists = await prisma.users.findUnique({ where: { id: followingId } });
+    if (!userExists) {
+      errorResponse(res, `User with ID ${followingId} not found`, 404);
+      return;
     }
 
-    try {
-        const users = await prisma.users.findMany({
-            where:{
-                OR: [
-                    { username: { contains: search as string, mode: "insensitive" } },
-                    { fullname: { contains: search as string, mode: "insensitive" } },
-                ],
-            },
-            select:{
-                id: true,
-                username: true,
-                fullname: true,
-                email: true,
-                profile_image: true,
-                banner: true,
-                bio: true
-            }
-        });
-
-        if (users.length === 0) {
-            res.status(404).json({
-                success: false,
-                message: "No users found.",
-            });
-            return;
-        }
-
-        res.status(200).json({
-            success: true,
-            message: `Search results for search: ${search}`,
-            data: users,
-        });
-        return;
-
-    } catch (error) {
-        console.error("Search Users Error:", error);
-        res.status(500).json({
-            success: false,
-            message: "Internal server error",
-        });
+    const alreadyFollowing = await prisma.followers.findFirst({
+      where: { followerId, followingId },
+    });
+    if (alreadyFollowing) {
+      errorResponse(res, "You are already following this user.", 400);
+      return;
     }
-}
+
+    const follow = await prisma.followers.create({ data: { followerId, followingId } });
+    successResponse(res, `You are now following user with ID ${followingId}`, follow, 201);
+  } catch (error) {
+    console.error("Follow User Error:", error);
+    errorResponse(res, "Internal server error");
+  }
+};
+
+export const unfollowUser = async (req: Request, res: Response): Promise<void> => {
+  const { id: followingId } = req.params;
+  const followerId = req.user?.id;
+
+  if (!followerId || !isValidId(followingId)) {
+    errorResponse(res, "Unauthorized", 401);
+    return;
+  }
+  if (followerId === followingId) {
+    errorResponse(res, "You cannot unfollow yourself.", 400);
+    return;
+  }
+
+  try {
+    const existingFollow = await prisma.followers.findFirst({
+      where: { followerId, followingId },
+    });
+    if (!existingFollow) {
+      errorResponse(res, "You are not following this user.", 400);
+      return;
+    }
+
+    await prisma.followers.delete({ where: { id: existingFollow.id } });
+    successResponse(res, `You have unfollowed user with ID ${followingId}`);
+  } catch (error) {
+    console.error("Unfollow User Error:", error);
+    errorResponse(res, "Internal server error");
+  }
+};
+
+export const getUserFollowers = async (req: Request, res: Response): Promise<void> => {
+  const { id: userId } = req.params;
+
+  if (!isValidId(userId)) {
+    errorResponse(res, "Invalid user ID", 400);
+    return;
+  }
+
+  try {
+    const followers = await prisma.followers.findMany({
+      where: { followingId: userId },
+      include: { follower: { select: userSelectFields } },
+    });
+
+    const formatted = followers.map((f) => f.follower);
+    successResponse(res, `Followers of user ${userId}`, formatted);
+  } catch (error) {
+    console.error("Get Followers Error:", error);
+    errorResponse(res, "Internal server error");
+  }
+};
+
+export const getUserFollowing = async (req: Request, res: Response): Promise<void> => {
+  const { id: userId } = req.params;
+
+  if (!isValidId(userId)) {
+    errorResponse(res, "Invalid user ID", 400);
+    return;
+  }
+
+  try {
+    const followings = await prisma.followers.findMany({
+      where: { followerId: userId },
+      include: { following: { select: userSelectFields } },
+    });
+
+    const formatted = followings.map((f) => f.following);
+    successResponse(res, `Users followed by user ${userId}`, formatted);
+  } catch (error) {
+    console.error("Get Following Error:", error);
+    errorResponse(res, "Internal server error");
+  }
+};
+
+export const searchUsers = async (req: Request, res: Response): Promise<void> => {
+  const { search } = req.query;
+  const searchQuery = String(search || "").trim();
+
+  if (searchQuery.length < 3) {
+    errorResponse(res, "Search query must be at least 3 characters.", 400);
+    return;
+  }
+
+  try {
+    const users = await prisma.users.findMany({
+      where: {
+        OR: [
+          { username: { contains: searchQuery, mode: "insensitive" } },
+          { fullname: { contains: searchQuery, mode: "insensitive" } },
+        ],
+      },
+      select: userSelectFields,
+    });
+
+    if (!users.length) {
+      errorResponse(res, "No users found.", 404);
+      return;
+    }
+
+    successResponse(res, `Search results for: ${searchQuery}`, users);
+  } catch (error) {
+    console.error("Search Users Error:", error);
+    errorResponse(res, "Internal server error");
+  }
+};

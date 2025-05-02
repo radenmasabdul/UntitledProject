@@ -1,0 +1,1 @@
+export const isValidId = (id: string): boolean => /^[a-zA-Z0-9\-]+$/.test(id);

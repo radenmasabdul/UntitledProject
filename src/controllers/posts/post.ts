@@ -158,3 +158,46 @@ export const createPost = async (req: Request, res: Response) => {
       });
     }
 };
+
+export const deletePost = async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const loggedInUserId = req.user.id;
+
+  try {
+      const existingPost = await prisma.posts.findUnique({
+          where: { id },
+      });
+
+      if (!existingPost) {
+          res.status(404).json({
+              success: false,
+              message: `Post with ID ${id} not found`,
+          });
+          return;
+      }
+
+      if (existingPost.usersId !== loggedInUserId) {
+          res.status(403).json({
+              success: false,
+              message: "You are not authorized to delete this post",
+          });
+          return;
+      }
+
+      await prisma.posts.delete({
+          where: { id },
+      });
+
+      res.status(200).json({
+          success: true,
+          message: "Post deleted successfully",
+      });
+
+  } catch (error) {
+      console.error("Delete Post Error:", error);
+      res.status(500).json({
+          success: false,
+          message: "Internal server error",
+      });
+  }
+};

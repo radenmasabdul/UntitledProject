@@ -97,16 +97,24 @@ export const getPostByid = async (req: Request, res: Response) => {
   }
 }
 export const createPost = async (req: Request, res: Response) => {
-    const { contentText } = req.body;
-    const userId = req.user?.id;
+    const { contentText, usersId, userId } = req.body;
+    const loggedInUserId = req.user?.id;
     const file = req.file;
   
-    if (!userId) {
+    if (!loggedInUserId) {
       res.status(400).json({
         success: false,
         message: "User ID is required",
       });
       return;
+    }
+
+    if (userId || usersId) {
+        res.status(403).json({
+            success: false,
+            message: "You are not authorized to create this post",
+        });
+        return;
     }
   
     // Tentukan mediaType berdasarkan file yang dikirim
@@ -137,7 +145,7 @@ export const createPost = async (req: Request, res: Response) => {
     try {
       const newPost = await prisma.posts.create({
         data: {
-          usersId: userId,
+          usersId: loggedInUserId,
           contentText: contentText || null,
           contentImage: file ? file.filename : null,
           mediaType,

@@ -1,0 +1,245 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Users {
+  id                String              @id @default(uuid())
+  username          String              @unique
+  fullname          String
+  email             String              @unique
+  password          String
+  profile_image     String?
+  banner            String?
+  bio               String?
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+
+  posts             Posts[]
+  stories           Story[]
+  likes             Like[]
+  comments          Comment[]
+  reposts           RePosts[]
+  notifications     Notification[]      @relation("UserNotifications")
+  relatedNotifications Notification[]   @relation("RelatedUserNotifications")
+  messagesSent      Messages[]          @relation("SenderMessages")
+  messagesReceived  Messages[]          @relation("ReceiverMessages")
+  friends           Friends[]           @relation("UserFriends")
+  friendOf          Friends[]           @relation("FriendUsers")
+  followers         Followers[]         @relation("UserFollowers")
+  following         Followers[]         @relation("UserFollowing")
+  storyViewers      StoryViewer[]
+  postViewers       PostsViewer[]
+  commentViewers    CommentViewer[]
+}
+
+model Posts {
+  id              String           @id @default(uuid())
+  usersId         String
+  contentText     String?
+  contentImage    String?
+  mediaType       MediaType
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  users           Users            @relation(fields: [usersId], references: [id])
+  comments        Comment[]
+  likes           Like[]
+  reposts         RePosts[]
+  attachments     Attachment[]
+  viewers         PostsViewer[]
+  notifications   Notification[]
+}
+
+model Story {
+  id              String           @id @default(uuid())
+  usersId         String
+  contentText     String?
+  contentMedia    String?
+  mediaType       MediaType
+  createdAt       DateTime         @default(now())
+  expirationTime  DateTime
+
+  users           Users            @relation(fields: [usersId], references: [id])
+  viewers         StoryViewer[]
+  likes           Like[]
+  comments        Comment[]
+  attachments     Attachment[]
+  notifications   Notification[]
+}
+
+model Like {
+  id              String           @id @default(uuid())
+  usersId         String
+  postsId         String?
+  storyId         String?
+  createdAt       DateTime         @default(now())
+
+  users           Users            @relation(fields: [usersId], references: [id])
+  posts           Posts?           @relation(fields: [postsId], references: [id])
+  story           Story?           @relation(fields: [storyId], references: [id])
+}
+
+model Comment {
+  id              String           @id @default(uuid())
+  usersId         String
+  postsId         String?
+  storyId         String?
+  content         String
+  mediaUrl        String?
+  mediaType       MediaType
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  users           Users            @relation(fields: [usersId], references: [id])
+  posts           Posts?           @relation(fields: [postsId], references: [id])
+  story           Story?           @relation(fields: [storyId], references: [id])
+  viewers         CommentViewer[]
+  attachments     Attachment[]
+  notifications   Notification[]
+}
+
+model RePosts {
+  id              String           @id @default(uuid())
+  usersId         String
+  originalPostsId String
+  createdAt       DateTime         @default(now())
+
+  users           Users            @relation(fields: [usersId], references: [id])
+  originalPosts   Posts            @relation(fields: [originalPostsId], references: [id])
+}
+
+model Attachment {
+  id              String           @id @default(uuid())
+  postsId         String?
+  commentId       String?
+  storyId         String?
+  filePath        String
+  fileType        FileType
+  createdAt       DateTime         @default(now())
+
+  posts           Posts?           @relation(fields: [postsId], references: [id])
+  comment         Comment?         @relation(fields: [commentId], references: [id])
+  story           Story?           @relation(fields: [storyId], references: [id])
+}
+
+model Notification {
+  id              String           @id @default(uuid())
+  usersId         String
+  relatedUsersId  String?
+  postsId         String?
+  commentId       String?
+  storyId         String?
+  type            NotificationType
+  readStatus      Boolean          @default(false)
+  createdAt       DateTime         @default(now())
+
+  users           Users            @relation("UserNotifications", fields: [usersId], references: [id])
+  relatedUsers    Users?           @relation("RelatedUserNotifications", fields: [relatedUsersId], references: [id])
+  posts           Posts?           @relation(fields: [postsId], references: [id])
+  comment         Comment?         @relation(fields: [commentId], references: [id])
+  story           Story?           @relation(fields: [storyId], references: [id])
+}
+
+model Messages {
+  id              String           @id @default(uuid())
+  senderId        String
+  receiverId      String
+  contentText     String?
+  mediaUrl        String?
+  mediaType       MediaType
+  readStatus      Boolean          @default(false)
+  createdAt       DateTime         @default(now())
+
+  sender          Users            @relation("SenderMessages", fields: [senderId], references: [id])
+  receiver        Users            @relation("ReceiverMessages", fields: [receiverId], references: [id])
+}
+
+model Friends {
+  id              String           @id @default(uuid())
+  usersId         String
+  friendId        String
+  friendStatus    FriendStatus
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  users           Users            @relation("UserFriends", fields: [usersId], references: [id])
+  friend          Users            @relation("FriendUsers", fields: [friendId], references: [id])
+
+  @@unique([usersId, friendId])
+}
+
+model Followers {
+  id              String           @id @default(uuid())
+  followerId      String
+  followingId     String
+  createdAt       DateTime         @default(now())
+
+  follower        Users            @relation("UserFollowers", fields: [followerId], references: [id])
+  following       Users            @relation("UserFollowing", fields: [followingId], references: [id])
+
+  @@unique([followerId, followingId])
+}
+
+model StoryViewer {
+  id              String           @id @default(uuid())
+  storyId         String
+  usersId         String
+  readAt          DateTime         @default(now())
+
+  story           Story            @relation(fields: [storyId], references: [id])
+  users           Users            @relation(fields: [usersId], references: [id])
+}
+
+model PostsViewer {
+  id              String           @id @default(uuid())
+  postsId         String
+  usersId         String
+  viewedAt        DateTime         @default(now())
+
+  posts           Posts            @relation(fields: [postsId], references: [id])
+  users           Users            @relation(fields: [usersId], references: [id])
+}
+
+model CommentViewer {
+  id              String           @id @default(uuid())
+  commentId       String
+  usersId         String
+  readAt          DateTime         @default(now())
+
+  comment         Comment          @relation(fields: [commentId], references: [id])
+  users           Users            @relation(fields: [usersId], references: [id])
+}
+
+enum MediaType {
+  PHOTO
+  VIDEO
+  MUSIC
+  TEXT
+}
+
+enum FileType {
+  IMAGE
+  VIDEO
+  AUDIO
+  DOCUMENT
+}
+
+enum FriendStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+}
+
+enum NotificationType {
+  LIKE
+  COMMENT
+  FOLLOW
+  FRIEND_REQUEST
+  REPOST
+  MENTION
+}

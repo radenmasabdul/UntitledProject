@@ -25,7 +25,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.login = void 0;
 const express_validator_1 = require("express-validator");
-const bcrypt_1 = __importDefault(require("bcrypt"));
+const bcryptjs_1 = __importDefault(require("bcryptjs"));
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const database_1 = __importDefault(require("@/configs/database"));
 const login = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
@@ -54,7 +54,7 @@ const login = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
         if (!user)
             throw { status: 404, message: "User not found" };
         // bandingkan password
-        const validPassword = yield bcrypt_1.default.compare(req.body.password, user.password);
+        const validPassword = yield bcryptjs_1.default.compare(req.body.password, user.password);
         if (!validPassword)
             throw { status: 401, message: "Invalid password" };
         // buat token JWT

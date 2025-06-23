@@ -1,0 +1,22 @@
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = __importDefault(require("express"));
+const user_1 = require("@/controllers/user/user");
+const authMiddleware_1 = require("@/middlewares/auth/authMiddleware");
+const upload_1 = __importDefault(require("@/middlewares/upload/upload"));
+const userRouter = express_1.default.Router();
+userRouter.get("/", authMiddleware_1.verifyToken, user_1.findUsers);
+userRouter.get("/search", authMiddleware_1.verifyToken, user_1.searchUsers);
+userRouter.get("/:id", authMiddleware_1.verifyToken, user_1.findUserById);
+userRouter.put("/:id", authMiddleware_1.verifyToken, user_1.updateUser);
+userRouter.delete("/me", authMiddleware_1.verifyToken, user_1.deleteUser);
+userRouter.put("/:id/image", authMiddleware_1.verifyToken, upload_1.default.single("image"), user_1.updateProfileImage);
+userRouter.put("/:id/banner", authMiddleware_1.verifyToken, upload_1.default.single("banner"), user_1.updateBanner);
+userRouter.post("/:id/follow", authMiddleware_1.verifyToken, user_1.followUser);
+userRouter.post("/:id/unfollow", authMiddleware_1.verifyToken, user_1.unfollowUser);
+userRouter.get("/:id/followers", authMiddleware_1.verifyToken, user_1.getUserFollowers);
+userRouter.get("/:id/following", authMiddleware_1.verifyToken, user_1.getUserFollowing);
+exports.default = userRouter;

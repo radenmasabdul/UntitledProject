@@ -14,7 +14,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.register = void 0;
 const express_validator_1 = require("express-validator");
-const bcrypt_1 = __importDefault(require("bcrypt"));
+const bcryptjs_1 = __importDefault(require("bcryptjs"));
 const database_1 = __importDefault(require("@/configs/database"));
 const register = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     //periksa hasil validasi
@@ -28,7 +28,7 @@ const register = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     }
     try {
         //hash password
-        const hashedPassword = yield bcrypt_1.default.hash(req.body.password, 10);
+        const hashedPassword = yield bcryptjs_1.default.hash(req.body.password, 10);
         //insert data ke database
         const user = yield database_1.default.users.create({
             data: {

@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "dotenv -e .env.dev -- ts-node-dev --require tsconfig-paths/register --respawn --transpile-only src/index.ts",
     "build": "node ./node_modules/typescript/bin/tsc",
-    "start": "dotenv -e .env.prod -- node -r module-alias/register dist/index.js",
+    "start": "node -r module-alias/register dist/index.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "radenmasabdul",

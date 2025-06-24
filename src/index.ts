@@ -8,6 +8,9 @@ import logger from './services/logger'
 import limiter from './middlewares/security/rateLimiters';
 import router from './routes';
 
+import swaggerUi from 'swagger-ui-express';
+import swaggerSpec from './docs/swagger';
+
 dotenv.config();
 
 const app = express();
@@ -32,6 +35,9 @@ app.use((req, res, next) => {
 
 //rate limiting
 app.use(limiter);
+
+// Swagger endpoint
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 //gunakan semua routes dengan prefix "/api"
 app.use("/api", router);

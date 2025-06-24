@@ -64,4 +64,9 @@ app.listen(port, () => {
     console.log(`Server started on port ${port}`);
 });
 
+console.log("🟢 Environment Loaded");
+console.log("🌐 PORT:", process.env.PORT);
+console.log("🔐 JWT:", process.env.JWT_SECRET?.slice(0, 6) + "...");
+console.log("🛢️ DB:", process.env.DATABASE_URL?.includes("localhost") ? "Local" : "Production");
+
 export default app;

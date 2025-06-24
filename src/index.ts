@@ -14,6 +14,8 @@ import swaggerSpec from './docs/swagger';
 dotenv.config();
 
 const app = express();
+app.set('trust proxy', 1);
+
 const port = process.env.PORT;
 
 logger.info("Server is starting...");

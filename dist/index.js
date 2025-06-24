@@ -21,8 +21,11 @@ const morgan_1 = __importDefault(require("morgan"));
 const logger_1 = __importDefault(require("./services/logger"));
 const rateLimiters_1 = __importDefault(require("./middlewares/security/rateLimiters"));
 const routes_1 = __importDefault(require("./routes"));
+const swagger_ui_express_1 = __importDefault(require("swagger-ui-express"));
+const swagger_1 = __importDefault(require("./docs/swagger"));
 dotenv_1.default.config();
 const app = (0, express_1.default)();
+app.set('trust proxy', 1);
 const port = process.env.PORT;
 logger_1.default.info("Server is starting...");
 //middleware
@@ -40,6 +43,8 @@ app.use((req, res, next) => {
 });
 //rate limiting
 app.use(rateLimiters_1.default);
+// Swagger endpoint
+app.use('/api-docs', swagger_ui_express_1.default.serve, swagger_ui_express_1.default.setup(swagger_1.default));
 //gunakan semua routes dengan prefix "/api"
 app.use("/api", routes_1.default);
 //routes
